@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Create New Account</title>
+    <link rel="stylesheet" href="loginfp.css">
+</head>
+<body>
+    <div class="create-account">
+        <h1>Create New Account</h1>
+        <form onsubmit="return createAccount(event);">
+            <p>Username</p>
+            <input type="text" name="username" placeholder="Enter Username" required>
+            <p>Email</p>
+            <input type="email" name="email" placeholder="Enter Email" required>
+            <p>Password</p>
+            <input type="password" name="password" placeholder="Enter Password" required id="newPass">
+            <input type="submit" value="Create Account">
+        </form>
+        <p><a href="login.html">Back to Login</a></p>
+    </div>
+
+    <script>
+        function createAccount(event) {
+            event.preventDefault(); // Prevent form submission
+
+            const username = event.target.username.value;
+            const email = event.target.email.value;
+            const password = event.target.password.value;
+
+            // Check if account already exists
+            const accounts = JSON.parse(localStorage.getItem('accounts')) || [];
+            const accountExists = accounts.find(account => account.username === username || account.email === email);
+
+            if (accountExists) {
+                alert("Account with this username or email already exists.");
+                return false;
+            }
+
+            // Create new account object
+            const newAccount = { username, email, password };
+            accounts.push(newAccount);
+
+            // Save accounts to localStorage
+            localStorage.setItem('accounts', JSON.stringify(accounts));
+            alert("Account created successfully!");
+            window.location.replace("login.html");
+        }
+    </script>
+</body>
+</html>
