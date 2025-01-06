@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Tools</title>
+    <link rel="stylesheet" href="tools.css">
+</head>
+<body>
+    
+    <div class="navi">
+        <h1>Financial Tools</h1>
+    </div>
+
+    <!-- Interest Calculator Section -->
+    <section class="interestCalculator">
+        <h2>Interest Calculator</h2>
+        <form class="interestForm">
+            <label for="principal">Principal Amount:</label>
+            <input type="number" id="principal" name="principal" required><br><br>
+            
+            <label for="interestType">Select Interest Type:</label>
+            <select id="interestType" name="interestType">
+                <option value="simple">Simple Interest</option>
+                <option value="compound">Compound Interest</option>
+            </select><br><br>
+
+            <label for="rate">Interest Rate:</label>
+            <input type="number" id="rate" name="rate" step="0.01" required><br><br>
+
+            <label for="rateType">Rate Type:</label>
+            <select id="rateType" name="rateType">
+                <option value="percentage">Percentage</option>
+                <option value="amount">Rupees</option>
+            </select><br><br>
+            
+            <label for="fromDate">From Date:</label>
+            <input type="date" id="fromDate" name="fromDate" required><br><br>
+            
+            <label for="toDate">To Date:</label>
+            <input type="date" id="toDate" name="toDate" required><br><br>
+            
+            <button type="button" onclick="calculateInterest()">Calculate Interest</button>
+            <button type="button" onclick="saveRecord()" style="display:none;" id="saveButton">Save</button>
+        
+            <div id="interestResult"></div>
+            <br><br>
+            <a href="incal.html">BACK</a>
+            <br><br>
+            <a href="index.html">HOME</a>
+            <br><br>
+            <a href="saved.html">VIEW SAVED RECORDS</a>
+        </form>
+    </section>
+
+    <script>
+        const records = JSON.parse(localStorage.getItem('interestRecords')) || [];
+
+        function calculateInterest() {
+            let principal = parseFloat(document.getElementById('principal').value);
+            let rate = parseFloat(document.getElementById('rate').value);
+            let rateType = document.getElementById('rateType').value;
+            let interestType = document.getElementById('interestType').value;
+            let fromDate = new Date(document.getElementById('fromDate').value);
+            let toDate = new Date(document.getElementById('toDate').value);
+
+            // Ensure toDate is not earlier than fromDate
+            if (toDate < fromDate) {
+                document.getElementById('interestResult').innerHTML = "Error: To Date must be later than From Date.";
+                return;
+            }
+
+            let timeDiff = (toDate.getTime() - fromDate.getTime()) / (1000 * 3600 * 24);
+            let timeInYears = timeDiff / 365; // Convert days to years
+
+            let interest = 0;
+            let totalAmount = 0;
+
+            if (interestType === "simple") {
+                if (rateType === "percentage") {
+                    interest = principal * (rate / 100) * timeInYears;
+                } else {
+                    interest =principal* (rate/100) * (timeDiff / 30); // Monthly rate
+                }
+            } else {
+                if (rateType === "percentage") {
+                    totalAmount = principal * Math.pow((1 + rate / 100), timeInYears);
+                } else {
+                    let totalMonths = timeDiff / 30;
+                    totalAmount = principal + (rate * totalMonths);
+                }
+                interest = totalAmount - principal;
+            }
+
+            totalAmount = principal + interest;
+
+            document.getElementById('interestResult').innerHTML = `
+                <h3>Interest Calculation Result</h3>
+                <p>Principal Amount: ₹${principal.toFixed(2)}</p>
+                <p>Interest Rate: ${rateType === "percentage" ? (rate) + '%' : '₹' + rate + ' per month'}</p>
+                <p>Duration: ${timeDiff.toFixed(0)} days (${timeInYears.toFixed(2)} years)</p>
+                <p>Interest Amount: ₹${interest.toFixed(2)}</p>
+                <p>Total Amount: ₹${totalAmount.toFixed(2)}</p>
+            `;
+
+            // Show save button
+            document.getElementById('saveButton').style.display = 'inline';
+
+            // Store calculated values in global variables for saving
+            window.calculatedRecord = {
+                principal,
+                rate,
+                rateType,
+                interestType,
+                fromDate: fromDate.toISOString().split('T')[0],
+                toDate: toDate.toISOString().split('T')[0],
+                interest,
+                totalAmount
+            };
+        }
+
+        function saveRecord() {
+            if (!window.calculatedRecord) {
+                alert('No record to save. Please calculate first.');
+                return;
+            }
+
+            records.push(window.calculatedRecord);
+            localStorage.setItem('interestRecords', JSON.stringify(records));
+
+            alert('Record saved successfully!');
+            document.getElementById('saveButton').style.display = 'none';
+            window.calculatedRecord = null; // Reset the saved record
+        }
+    </script>
+</body>
+</html>
