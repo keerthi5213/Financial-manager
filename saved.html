@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Records</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+        }
+        button {
+            margin: 5px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    
+    <div class="navi">
+        <h1>Saved Interest Records</h1>
+    </div>
+
+    <section class="records">
+        <table id="recordsTable" border="1">
+            <thead>
+                <tr>
+                    <th>Principal Amount</th>
+                    <th>Interest Rate</th>
+                    <th>Rate Type</th>
+                    <th>Interest Type</th>
+                    <th>From Date</th>
+                    <th>To Date</th>
+                    <th>Interest Amount</th>
+                    <th>Total Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <br>
+        <button id="saveImageButton">Save as Image</button>
+        <a href="index.html">HOME</a>
+    </section>
+
+    <script>
+        const records = JSON.parse(localStorage.getItem('interestRecords')) || [];
+        const recordsTable = document.getElementById('recordsTable').getElementsByTagName('tbody')[0];
+
+        function loadRecords() {
+            recordsTable.innerHTML = ''; // Clear existing rows
+            records.forEach((record, index) => {
+                let row = recordsTable.insertRow();
+                row.insertCell(0).innerText = ₹${record.principal.toFixed(2)};
+                row.insertCell(1).innerText = record.rate + (record.rateType === "percentage" ? '%' : ' per month');
+                row.insertCell(2).innerText = record.rateType;
+                row.insertCell(3).innerText = record.interestType;
+                row.insertCell(4).innerText = record.fromDate;
+                row.insertCell(5).innerText = record.toDate;
+                row.insertCell(6).innerText = ₹${record.interest.toFixed(2)};
+                row.insertCell(7).innerText = ₹${record.totalAmount.toFixed(2)};
+                
+                // Create action buttons
+                let actionsCell = row.insertCell(8);
+                actionsCell.innerHTML = 
+                    <button onclick="updateRecord(${index})">Update</button>
+                    <button onclick="deleteRecord(${index})">Delete</button>
+                ;
+            });
+        }
+
+        function deleteRecord(index) {
+            if (confirm('Are you sure you want to delete this record?')) {
+                records.splice(index, 1);
+                localStorage.setItem('interestRecords', JSON.stringify(records));
+                loadRecords(); // Reload records
+            }
+        }
+
+        function updateRecord(index) {
+            const record = records[index];
+            const principal = prompt("Enter new Principal Amount:", record.principal);
+            const rate = prompt("Enter new Interest Rate:", record.rate);
+            const rateType = prompt("Enter new Rate Type (percentage/amount):", record.rateType);
+            const interestType = prompt("Enter new Interest Type (simple/compound):", record.interestType);
+            const fromDate = prompt("Enter new From Date (YYYY-MM-DD):", record.fromDate);
+            const toDate = prompt("Enter new To Date (YYYY-MM-DD):", record.toDate);
+
+            if (principal && rate && rateType && interestType && fromDate && toDate) {
+                records[index] = {
+                    principal: parseFloat(principal),
+                    rate: parseFloat(rate),
+                    rateType,
+                    interestType,
+                    fromDate,
+                    toDate,
+                    interest: calculateInterestAmount(principal, rate, rateType, interestType, fromDate, toDate),
+                    totalAmount: calculateTotalAmount(principal, rate, rateType, interestType, fromDate, toDate)
+                };
+
+                localStorage.setItem('interestRecords', JSON.stringify(records));
+                loadRecords(); // Reload records
+            }
+        }
+
+        function calculateInterestAmount(principal, rate, rateType, interestType, fromDate, toDate) {
+            let fromDateObj = new Date(fromDate);
+            let toDateObj = new Date(toDate);
+            let timeDiff = (toDateObj.getTime() - fromDateObj.getTime()) / (1000 * 3600 * 24);
+            let timeInYears = timeDiff / 365;
+
+            let interest = 0;
+            if (interestType === "simple") {
+                if (rateType === "percentage") {
+                    interest = principal * (rate / 100) * timeInYears;
+                } else {
+                    interest = rate * (timeDiff / 30); // Monthly rate
+                }
+            } else {
+                if (rateType === "percentage") {
+                    interest = principal * (Math.pow((1 + rate / 100), timeInYears) - 1);
+                } else {
+                    let totalMonths = timeDiff / 30;
+                    interest = rate * totalMonths;
+                }
+            }
+            return interest;
+        }
+
+        function calculateTotalAmount(principal, rate, rateType, interestType, fromDate, toDate) {
+            let interest = calculateInterestAmount(principal, rate, rateType, interestType, fromDate, toDate);
+            return principal + interest;
+        }
+
+        function saveTableAsImage() {
+            html2canvas(document.getElementById('recordsTable')).then(canvas => {
+                let link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = 'interest_records.png';
+                link.click();
+            });
+        }
+
+        // Event listener for saving as image
+        document.getElementById('saveImageButton').addEventListener('click', saveTableAsImage);
+
+        // Load records on page load
+        loadRecords();
+    </script>
+</body>
+</html>
